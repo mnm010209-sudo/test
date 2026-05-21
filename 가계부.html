@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>스마트 가계부</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen py-8 px-4">
+
+    <div class="max-w-md mx-auto">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-gray-800">나의 가계부</h1>
+            <p class="text-gray-500">오늘의 소비를 기록하세요</p>
+        </header>
+
+        <!-- 수입, 지출, 잔액 레이아웃을 한 줄로 수정 -->
+        <div class="flex gap-2 mb-8">
+            <div class="flex-1 bg-white p-4 rounded-xl shadow-sm border border-gray-100 text-center">
+                <p class="text-[10px] text-gray-400 font-bold uppercase mb-1">잔액</p>
+                <p id="total-balance" class="text-sm font-bold text-gray-900 truncate">₩0</p>
+            </div>
+            <div class="flex-1 bg-green-50 p-4 rounded-xl border border-green-100 text-center">
+                <p class="text-[10px] text-green-600 font-bold uppercase mb-1">수입</p>
+                <p id="total-income" class="text-sm font-semibold text-green-700 truncate">₩0</p>
+            </div>
+            <div class="flex-1 bg-red-50 p-4 rounded-xl border border-red-100 text-center">
+                <p class="text-[10px] text-red-600 font-bold uppercase mb-1">지출</p>
+                <p id="total-expense" class="text-sm font-semibold text-red-700 truncate">₩0</p>
+            </div>
+        </div>
+
+        <form id="transaction-form" class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">항목명</label>
+                    <input type="text" id="desc" required placeholder="예: 점심 식사" class="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">금액 (원)</label>
+                    <input type="number" id="amount" required placeholder="0" class="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">구분</label>
+                    <select id="type" class="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="expense">지출</option>
+                        <option value="income">수입</option>
+                    </select>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition duration-200">추가하기</button>
+            </div>
+        </form>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="p-4 border-b border-gray-100">
+                <h3 class="font-bold text-gray-800">최근 내역</h3>
+            </div>
+            <ul id="transaction-list" class="divide-y divide-gray-100">
+                <!-- 리스트가 JS를 통해 동적으로 생성됩니다 -->
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let transactions = JSON.parse(localStorage.getItem('myBudgetApp')) || [];
+
+        const form = document.getElementById('transaction-form');
+        const list = document.getElementById('transaction-list');
+        const balanceEl = document.getElementById('total-balance');
+        const incomeEl = document.getElementById('total-income');
+        const expenseEl = document.getElementById('total-expense');
+
+        function updateUI() {
+            list.innerHTML = '';
+            let income = 0;
+            let expense = 0;
+
+            transactions.forEach((t, index) => {
+                const li = document.createElement('li');
+                li.className = 'p-4 flex items-center justify-between hover:bg-gray-50 transition';
+                
+                const isIncome = t.type === 'income';
+                
+                li.innerHTML = `
+                    <div>
+                        <p class="font-medium text-gray-800">${t.desc}</p>
+                        <span class="text-xs ${isIncome ? 'text-green-500' : 'text-red-500'} font-bold">${isIncome ? '수입' : '지출'}</span>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span class="font-bold text-gray-700">${isIncome ? '+' : '-'}₩${t.amount.toLocaleString()}</span>
+                        <button onclick="deleteTransaction(${index})" class="text-gray-400 hover:text-red-500 transition">✕</button>
+                    </div>
+                `;
+                list.appendChild(li);
+
+                if (isIncome) income += t.amount;
+                else expense += t.amount;
+            });
+
+            balanceEl.innerText = `₩${(income - expense).toLocaleString()}`;
+            incomeEl.innerText = `₩${income.toLocaleString()}`;
+            expenseEl.innerText = `₩${expense.toLocaleString()}`;
+
+            localStorage.setItem('myBudgetApp', JSON.stringify(transactions));
+        }
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const desc = document.getElementById('desc').value;
+            const amount = parseInt(document.getElementById('amount').value);
+            const type = document.getElementById('type').value;
+
+            transactions.unshift({ desc, amount, type });
+            form.reset();
+            updateUI();
+        });
+
+        function deleteTransaction(index) {
+            transactions.splice(index, 1);
+            updateUI();
+        }
+
+        // 초기화
+        updateUI();
+    </script>
+</body>
+</html>
